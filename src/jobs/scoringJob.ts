@@ -15,7 +15,7 @@ export class ScoringJob {
 
       const features = await featureComputationService.computeFeaturesForUser(userId, now);
 
-      const scoreResult = scoringEngineService.computeScoreForUser(features, now);
+      const scoreResult = await scoringEngineService.computeScoreForUser(features, now, userId);
 
       await scoringEngineService.persistScore(userId, scoreResult);
 

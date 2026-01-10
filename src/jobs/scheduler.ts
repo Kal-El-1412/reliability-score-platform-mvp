@@ -29,12 +29,11 @@ export const setupJobScheduler = () => {
       logger.info('Running mission assignment job');
 
       if (job.data.type === 'daily') {
-        await missionAssignmentJob.assignDailyMissions();
+        await missionAssignmentJob.runDailyTasks();
       } else if (job.data.type === 'weekly') {
-        await missionAssignmentJob.assignWeeklyMissions();
+        await missionAssignmentJob.runWeeklyTasks();
       }
 
-      await missionAssignmentJob.expireOldMissions();
       return { completed: true };
     },
     { connection }

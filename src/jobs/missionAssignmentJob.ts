@@ -1,129 +1,81 @@
 import prisma from '../config/database';
 import logger from '../config/logger';
+import { missionsService } from '../modules/missions/missions.service';
 
 export class MissionAssignmentJob {
-  async assignDailyMissions() {
+  async assignDailyMissionsForAllUsers() {
     try {
-      logger.info('Starting daily mission assignment');
+      logger.info('Starting daily mission assignment for all users');
 
       const users = await prisma.user.findMany({
         select: { id: true },
       });
 
-      const dailyMissions = await prisma.mission.findMany({
-        where: {
-          frequency: 'daily',
-          isActive: true,
-        },
-      });
+      let successCount = 0;
+      let errorCount = 0;
 
       for (const user of users) {
-        for (const mission of dailyMissions) {
-          const existingAssignment = await prisma.userMission.findFirst({
-            where: {
-              userId: user.id,
-              missionId: mission.id,
-              status: 'active',
-            },
-          });
-
-          if (!existingAssignment) {
-            await prisma.userMission.create({
-              data: {
-                userId: user.id,
-                missionId: mission.id,
-                status: 'active',
-                expiresAt: this.getExpiryDate('daily'),
-              },
-            });
-
-            logger.info(`Assigned daily mission ${mission.name} to user ${user.id}`);
-          }
+        try {
+          await missionsService.assignDailyMissionsForUser(user.id);
+          successCount++;
+        } catch (error) {
+          logger.error(`Failed to assign daily missions for user ${user.id}:`, error);
+          errorCount++;
         }
       }
 
-      logger.info('Daily mission assignment completed');
+      logger.info(`Daily mission assignment completed: ${successCount} succeeded, ${errorCount} failed`);
     } catch (error) {
-      logger.error('Error in daily mission assignment:', error);
+      logger.error('Error in daily mission assignment job:', error);
     }
   }
 
-  async assignWeeklyMissions() {
+  async assignWeeklyMissionsForAllUsers() {
     try {
-      logger.info('Starting weekly mission assignment');
+      logger.info('Starting weekly mission assignment for all users');
 
       const users = await prisma.user.findMany({
         select: { id: true },
       });
 
-      const weeklyMissions = await prisma.mission.findMany({
-        where: {
-          frequency: 'weekly',
-          isActive: true,
-        },
-      });
+      let successCount = 0;
+      let errorCount = 0;
 
       for (const user of users) {
-        for (const mission of weeklyMissions) {
-          const existingAssignment = await prisma.userMission.findFirst({
-            where: {
-              userId: user.id,
-              missionId: mission.id,
-              status: 'active',
-            },
-          });
-
-          if (!existingAssignment) {
-            await prisma.userMission.create({
-              data: {
-                userId: user.id,
-                missionId: mission.id,
-                status: 'active',
-                expiresAt: this.getExpiryDate('weekly'),
-              },
-            });
-
-            logger.info(`Assigned weekly mission ${mission.name} to user ${user.id}`);
-          }
+        try {
+          await missionsService.assignWeeklyMissionsForUser(user.id);
+          successCount++;
+        } catch (error) {
+          logger.error(`Failed to assign weekly missions for user ${user.id}:`, error);
+          errorCount++;
         }
       }
 
-      logger.info('Weekly mission assignment completed');
+      logger.info(`Weekly mission assignment completed: ${successCount} succeeded, ${errorCount} failed`);
     } catch (error) {
-      logger.error('Error in weekly mission assignment:', error);
+      logger.error('Error in weekly mission assignment job:', error);
     }
   }
 
   async expireOldMissions() {
     try {
-      const expiredMissions = await prisma.userMission.updateMany({
-        where: {
-          status: 'active',
-          expiresAt: {
-            lt: new Date(),
-          },
-        },
-        data: {
-          status: 'expired',
-        },
-      });
+      logger.info('Starting mission expiration job');
 
-      logger.info(`Expired ${expiredMissions.count} old missions`);
+      await missionsService.expireOldMissions();
+
+      logger.info('Mission expiration job completed');
     } catch (error) {
-      logger.error('Error expiring old missions:', error);
+      logger.error('Error in mission expiration job:', error);
     }
   }
 
-  private getExpiryDate(frequency: string): Date {
-    const now = new Date();
-    if (frequency === 'daily') {
-      now.setDate(now.getDate() + 1);
-      now.setHours(23, 59, 59, 999);
-    } else if (frequency === 'weekly') {
-      now.setDate(now.getDate() + 7);
-      now.setHours(23, 59, 59, 999);
-    }
-    return now;
+  async runDailyTasks() {
+    await this.expireOldMissions();
+    await this.assignDailyMissionsForAllUsers();
+  }
+
+  async runWeeklyTasks() {
+    await this.assignWeeklyMissionsForAllUsers();
   }
 }
 

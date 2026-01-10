@@ -1,5 +1,6 @@
 import prisma from '../../config/database';
 import logger from '../../config/logger';
+import { riskService } from '../risk/risk.service';
 
 export interface Features {
   streakDays: number;
@@ -35,12 +36,20 @@ export interface ScoreResult {
 }
 
 export class ScoringEngineService {
-  computeScoreForUser(features: Features, now: Date = new Date()): ScoreResult {
+  async computeScoreForUser(features: Features, now: Date = new Date(), userId?: string): Promise<ScoreResult> {
     const consistencyScore = this.calculateConsistencyScore(features);
     const capacityScore = this.calculateCapacityScore(features);
-    const integrityScore = this.calculateIntegrityScore(features);
+    let integrityScore = this.calculateIntegrityScore(features);
     const engagementQualityScore = this.calculateEngagementQualityScore(features);
     const inactivityPenalty = this.calculateInactivityPenalty(features);
+
+    if (userId) {
+      const riskStatus = await riskService.getRiskStatus(userId);
+      if (riskStatus === 'shadow') {
+        integrityScore = 0;
+        logger.warn(`IntegrityScore clamped to 0 for user ${userId} due to shadow status`);
+      }
+    }
 
     let totalScore =
       consistencyScore +

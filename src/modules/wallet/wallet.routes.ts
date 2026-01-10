@@ -1,10 +1,9 @@
 import { Router } from 'express';
-import { WalletController } from './wallet.controller';
+import walletController from './wallet.controller';
 import { authenticate } from '../../middleware/auth';
 
 const router = Router();
-const walletController = new WalletController();
 
-router.get('/', authenticate, walletController.getWallet);
+router.get('/', authenticate, walletController.getWallet.bind(walletController));
 
 export default router;

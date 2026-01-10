@@ -92,47 +92,53 @@ model ScoreHistory {
 }
 
 model Mission {
-  id              String   @id @default(uuid())
-  name            String
-  description     String
+  id              String   @id @default(cuid())
   type            String
-  frequency       String
-  requirements    Json
-  scoreBonus      Int      @map("score_bonus")
-  rewardPoints    Int      @map("reward_points")
-  isActive        Boolean  @default(true) @map("is_active")
+  code            String   @unique
+  title           String
+  description     String
+  targetCount     Int      @default(1) @map("target_count")
+  rewardPoints    Int      @default(0) @map("reward_points")
+  scoreImpactHint Int      @default(0) @map("score_impact_hint")
+  activeFrom      DateTime @map("active_from")
+  activeTo        DateTime @map("active_to")
+  conditions      Json     @default("{}")
   createdAt       DateTime @default(now()) @map("created_at")
 
   userMissions    UserMission[]
 
+  @@index([type])
   @@map("missions")
 }
 
 model UserMission {
-  id              String   @id @default(uuid())
+  id              String   @id @default(cuid())
   userId          String   @map("user_id")
   missionId       String   @map("mission_id")
-  status          String   @default("active")
-  progress        Json     @default("{}")
-  assignedAt      DateTime @default(now()) @map("assigned_at")
+  status          String   @default("assigned")
+  progressCount   Int      @default(0) @map("progress_count")
+  createdAt       DateTime @default(now()) @map("created_at")
   completedAt     DateTime? @map("completed_at")
-  expiresAt       DateTime? @map("expires_at")
 
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   mission         Mission  @relation(fields: [missionId], references: [id])
 
-  @@index([userId, status])
+  @@index([userId])
+  @@index([missionId])
   @@map("user_missions")
 }
 
 model Reward {
-  id              String   @id @default(uuid())
-  name            String
+  id              String   @id @default(cuid())
+  partnerId       String?  @map("partner_id")
+  type            String
+  title           String
   description     String
-  category        String
-  pointsCost      Int      @map("points_cost")
-  isAvailable     Boolean  @default(true) @map("is_available")
-  metadata        Json?
+  costPoints      Int      @default(0) @map("cost_points")
+  valueDisplay    String   @map("value_display")
+  termsUrl        String?  @map("terms_url")
+  activeFrom      DateTime @map("active_from")
+  activeTo        DateTime @map("active_to")
   createdAt       DateTime @default(now()) @map("created_at")
 
   walletTransactions WalletTransaction[]
@@ -141,33 +147,30 @@ model Reward {
 }
 
 model WalletTransaction {
-  id              String   @id @default(uuid())
+  id              String   @id @default(cuid())
   userId          String   @map("user_id")
-  type            String
   amount          Int
-  description     String
-  rewardId        String?  @map("reward_id")
-  metadata        Json?
+  currency        String   @default("POINTS")
+  type            String
+  source          String
+  relatedId       String?  @map("related_id")
   createdAt       DateTime @default(now()) @map("created_at")
 
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  reward          Reward?  @relation(fields: [rewardId], references: [id])
+  reward          Reward?  @relation(fields: [relatedId], references: [id])
 
-  @@index([userId, createdAt])
+  @@index([userId])
   @@map("wallet_transactions")
 }
 
 model RiskProfile {
-  id              String   @id @default(uuid())
-  userId          String   @unique @map("user_id")
-  riskState       String   @default("ok") @map("risk_state")
-  flags           Json     @default("[]")
-  velocityScore   Float    @default(0) @map("velocity_score")
-  deviceFingerprint String? @map("device_fingerprint")
-  lastFlaggedAt   DateTime? @map("last_flagged_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-
+  userId          String   @id @map("user_id")
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  riskScore       Int      @default(0) @map("risk_score")
+  status          String   @default("ok")
+  flags           Json     @default("[]")
+  updatedAt       DateTime @default(now()) @map("updated_at")
 
   @@map("risk_profile")
 }

@@ -48,7 +48,7 @@ export class ScoreService {
 
     const features = await featureComputationService.computeFeaturesForUser(userId, now);
 
-    const scoreResult = scoringEngineService.computeScoreForUser(features, now);
+    const scoreResult = await scoringEngineService.computeScoreForUser(features, now, userId);
 
     await scoringEngineService.persistScore(userId, scoreResult);
 
@@ -57,7 +57,7 @@ export class ScoreService {
 
   async calculateScore(userId: string) {
     const features = await featureComputationService.computeFeaturesForUser(userId);
-    const scoreResult = scoringEngineService.computeScoreForUser(features);
+    const scoreResult = await scoringEngineService.computeScoreForUser(features, new Date(), userId);
 
     return {
       totalScore: scoreResult.totalScore,
