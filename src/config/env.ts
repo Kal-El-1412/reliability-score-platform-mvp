@@ -13,7 +13,7 @@ interface Config {
 }
 
 export const config: Config = {
-  port: parseInt(process.env.PORT || '3000'),
+  port: parseInt(process.env.PORT || '4000'),
   nodeEnv: process.env.NODE_ENV || 'development',
   databaseUrl: process.env.DATABASE_URL!,
   jwtSecret: process.env.JWT_SECRET || 'your-secret-key-change-in-production',

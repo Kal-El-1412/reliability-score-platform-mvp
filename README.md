@@ -1,6 +1,24 @@
-# Reliability Score Platform - Backend MVP
+# Reliability Score Platform - Full Stack
 
-A modular backend system for tracking user reliability scores based on events, missions, and behavior analytics.
+A modular full-stack system for tracking user reliability scores based on events, missions, and behavior analytics.
+
+## Architecture
+
+This is a **monorepo** containing:
+
+- **Backend (Express + Prisma)** - Located at root, runs on **PORT 4000**
+- **Frontend (Next.js)** - Located in `/frontend`, runs on **PORT 3000**
+
+### Development Commands
+
+```bash
+npm run dev              # Starts frontend on port 3000 (default for preview)
+npm run dev:frontend     # Starts frontend only
+npm run dev:backend      # Starts backend only on port 4000
+npm run build            # Builds both frontend and backend
+```
+
+**Note**: The frontend connects to the backend via `NEXT_PUBLIC_API_BASE_URL=http://localhost:4000/v1`
 
 ## Documentation
 
@@ -189,10 +207,11 @@ npm run prisma:seed
 ### 6. Start Development Server
 
 ```bash
-npm run dev
+npm run dev              # Starts frontend (Next.js) on port 3000
+npm run dev:backend      # Starts backend (Express) on port 4000
 ```
 
-The server will start on `http://localhost:3000`.
+The frontend will be available at `http://localhost:3000` and the backend API at `http://localhost:4000`.
 
 ## Development
 
