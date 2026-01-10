@@ -2,9 +2,24 @@
 
 A modular backend system for tracking user reliability scores based on events, missions, and behavior analytics.
 
+## Documentation
+
+- **[IMPLEMENTATION_DETAILS.md](./IMPLEMENTATION_DETAILS.md)** - Comprehensive technical documentation of the Event Ledger, Feature Aggregation, and Scoring Engine V2 implementation
+- **[TESTING_GUIDE.md](./TESTING_GUIDE.md)** - Step-by-step testing scenarios and examples
+- **[QUICK_START.md](./QUICK_START.md)** - Quick setup and usage guide
+- **[PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)** - Detailed project structure overview
+
 ## Overview
 
 This platform assigns users a Reliability Score (0-1000) based on user events and missions. Users earn rewards through missions, and behavior is tracked through an event ledger. Scoring runs once per day via background jobs.
+
+### Fully Implemented Features
+
+✅ **Event Ledger** - Immutable event tracking with 5 categories (behavior, transaction, engagement, risk, system)
+✅ **Feature Aggregation** - Computes 12+ features from events (streaks, diversity, disputes, etc.)
+✅ **Scoring Engine V2** - Complete scoring formula with 4 sub-scores and driver generation
+✅ **Score API** - GET /score and GET /score/history endpoints with auto-computation
+✅ **Daily Scoring Job** - Automated batch processing for all active users
 
 ## Tech Stack
 

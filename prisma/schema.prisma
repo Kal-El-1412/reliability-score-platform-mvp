@@ -18,67 +18,77 @@ model User {
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   events          Event[]
-  scores          Score[]
+  score           Score?
+  scoreHistory    ScoreHistory[]
   userMissions    UserMission[]
   walletTransactions WalletTransaction[]
   riskProfile     RiskProfile?
-  features        Feature[]
+  features        Features?
 
   @@map("users")
 }
 
 model Event {
-  id          String   @id @default(uuid())
+  id          String   @id @default(cuid())
   userId      String   @map("user_id")
   eventType   String   @map("event_type")
-  eventData   Json     @map("event_data")
+  category    String   @default("behavior")
   timestamp   DateTime @default(now())
-  metadata    Json?
+  properties  Json     @default("{}")
+  deviceId    String?  @map("device_id")
+  riskScore   Float    @default(0) @map("risk_score")
+  createdAt   DateTime @default(now()) @map("created_at")
 
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, timestamp])
-  @@index([eventType])
+  @@index([eventType, timestamp])
   @@map("events")
 }
 
-model Feature {
-  id                  String   @id @default(uuid())
-  userId              String   @map("user_id")
-  calculatedAt        DateTime @default(now()) @map("calculated_at")
+model Features {
+  userId               String   @id @map("user_id")
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  activityDays        Int      @default(0) @map("activity_days")
-  streakCurrent       Int      @default(0) @map("streak_current")
-  streakLongest       Int      @default(0) @map("streak_longest")
-  eventDiversity      Float    @default(0) @map("event_diversity")
-  totalEvents         Int      @default(0) @map("total_events")
-  avgEventsPerDay     Float    @default(0) @map("avg_events_per_day")
-  lastActivityDate    DateTime? @map("last_activity_date")
+  streakDays           Int      @default(0) @map("streak_days")
+  activeDays30d        Int      @default(0) @map("active_days_30d")
+  activeDays90d        Int      @default(0) @map("active_days_90d")
+  meaningfulEvents30d  Int      @default(0) @map("meaningful_events_30d")
+  diversityIndex90d    Int      @default(0) @map("diversity_index_90d")
+  disputeCount90d      Int      @default(0) @map("dispute_count_90d")
+  reversalCount90d     Int      @default(0) @map("reversal_count_90d")
+  velocityFlags30d     Int      @default(0) @map("velocity_flags_30d")
+  riskFlags90d         Int      @default(0) @map("risk_flags_90d")
+  inactivityWeeks      Int      @default(0) @map("inactivity_weeks")
+  completionRate90d    Float    @default(0) @map("completion_rate_90d")
+  tenureDays           Int      @default(0) @map("tenure_days")
+  updatedAt            DateTime @default(now()) @map("updated_at")
 
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId])
   @@map("features")
 }
 
 model Score {
-  id                    String   @id @default(uuid())
-  userId                String   @map("user_id")
-  totalScore            Int      @map("total_score")
-  consistencyScore      Int      @map("consistency_score")
-  capacityScore         Int      @map("capacity_score")
-  integrityScore        Int      @map("integrity_score")
-  engagementQualityScore Int     @map("engagement_quality_score")
-
-  drivers               Json
-  nextActions           Json     @map("next_actions")
-
-  calculatedAt          DateTime @default(now()) @map("calculated_at")
-
+  userId      String   @id @map("user_id")
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId, calculatedAt])
+  totalScore  Int      @map("total_score")
+  subScores   Json     @map("sub_scores")
+  drivers     Json
+  lastUpdated DateTime @default(now()) @map("last_updated")
+
   @@map("scores")
+}
+
+model ScoreHistory {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  timestamp   DateTime @default(now())
+  totalScore  Int      @map("total_score")
+
+  @@index([userId, timestamp])
+  @@map("score_history")
 }
 
 model Mission {
