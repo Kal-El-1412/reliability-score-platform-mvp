@@ -2,8 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
 
-  // Note: Turbopack is disabled via --no-turbo flag in package.json
-  // for Stackblitz/WASM compatibility
+  // Force Webpack bundler for Stackblitz/WASM compatibility
+  // Turbopack is disabled via --webpack flag in package.json scripts
 };
 
 module.exports = nextConfig;
