@@ -4,22 +4,62 @@ This document explains the frontend smoke testing setup for the Reliability Scor
 
 ## Overview
 
-The frontend uses **Playwright** for automated smoke testing to verify that:
-- The Next.js dev server starts successfully
-- Key pages render without errors
-- Critical UI elements are present and visible
+The frontend uses **two approaches** for smoke testing:
+
+1. **Component-Level Tests** (Jest + React Testing Library) - For WASM environments like Bolt/Stackblitz
+2. **End-to-End Tests** (Playwright) - For local development and CI/CD
+
+### Component-Level Tests (Recommended for Bolt)
+
+Uses Jest with jsdom to test React components in isolation:
+- No need to start Next.js dev server
+- Works in WASM environments (Bolt/Stackblitz)
+- Fast and reliable
+- Tests component rendering and UI presence
+
+### End-to-End Tests (Playwright)
+
+Uses Playwright to test the full application:
+- Starts Next.js dev server automatically
+- Tests in a real browser environment
+- Requires native Node.js runtime (not WASM)
+- Best for local development and CI/CD
+
+## WASM Environment Limitations
+
+**IMPORTANT**: In WASM-based environments like Bolt or Stackblitz, Playwright's webServer feature fails with:
+
+```
+Error: `turbo.createProject` is not supported by the wasm bindings.
+```
+
+This occurs because:
+- Next.js 16+ uses Turbopack by default in development
+- Turbopack requires native bindings that aren't available in WASM
+- Even with `TURBOPACK=0`, system dependencies (like `libnspr4.so`) may be missing
+
+**Solution**: Use component-level tests instead of Playwright in WASM environments.
 
 ## Quick Start
 
-### Run Smoke Tests from Root
+### Component-Level Smoke Tests (Recommended for Bolt)
 
 ```bash
-npm run test:frontend:smoke
+# From repository root
+npm run test:frontend:component-smoke
+
+# From frontend directory
+cd frontend
+npm run test:smoke:component
 ```
 
-### Run Smoke Tests from Frontend Directory
+### Playwright E2E Smoke Tests (Local/CI only)
 
 ```bash
+# From repository root
+npm run test:frontend:smoke
+
+# From frontend directory
 cd frontend
 npm run test:smoke
 ```
@@ -33,7 +73,17 @@ Playwright requires system libraries to run Chromium. If you encounter errors ab
 
 ## What Gets Tested
 
-The smoke tests verify:
+### Component-Level Smoke Tests
+
+Verify that key UI components render without errors:
+
+1. **Login Page Component** - Renders with all form elements and text
+2. **Core UI Elements** - Headers, buttons, inputs are present
+3. **No Runtime Errors** - Component tree doesn't crash during render
+
+### Playwright E2E Smoke Tests
+
+Verify full application behavior:
 
 1. **Homepage Redirect** - Root path redirects to login or dashboard
 2. **Login Page** - All form elements and links are present
@@ -44,20 +94,42 @@ The smoke tests verify:
 
 ```
 frontend/
+├── jest.config.cjs         # Jest configuration
+├── jest.setup.ts           # Jest setup (testing-library/jest-dom)
+├── __tests__/
+│   └── smoke.test.tsx      # Component smoke tests
 ├── playwright.config.ts    # Playwright configuration
 ├── tests/
-│   ├── smoke.spec.ts       # Smoke test suite
+│   ├── smoke.spec.ts       # Playwright smoke tests
 │   └── README.md           # Test documentation
-└── package.json            # Includes test:smoke script
+└── package.json            # Test scripts
 ```
 
 ## Configuration Details
+
+### Jest Config (`frontend/jest.config.cjs`)
+
+- **Test Environment**: jsdom (simulates browser DOM)
+- **Transform**: ts-jest for TypeScript/TSX files
+- **Module Name Mapper**: Supports Next.js `@/` path alias
+- **Setup Files**: `jest.setup.ts` loads testing-library/jest-dom
+
+Key features:
+```javascript
+{
+  testEnvironment: 'jsdom',
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/$1',
+  }
+}
+```
 
 ### Playwright Config (`frontend/playwright.config.ts`)
 
 - **Base URL**: `http://localhost:3000`
 - **Test Timeout**: 60 seconds
-- **Auto-start Server**: Yes (starts `npm run dev` automatically)
+- **Auto-start Server**: Yes (starts `npm run dev:test` with Turbopack disabled)
 - **Browser**: Chromium (can extend to Firefox, WebKit)
 - **CI Retries**: 2 attempts on failure
 
@@ -67,7 +139,7 @@ Playwright automatically starts the Next.js dev server before running tests:
 
 ```typescript
 webServer: {
-  command: 'npm run dev',
+  command: 'npm run dev:test',  // Uses TURBOPACK=0
   url: 'http://localhost:3000',
   reuseExistingServer: !process.env.CI,
   timeout: 120000,
@@ -98,7 +170,27 @@ Location: `.github/workflows/frontend-smoke.yml`
 
 ## Running Tests Locally
 
-### First Time Setup
+### Component Tests (Jest)
+
+```bash
+# From repository root
+npm run test:frontend:component-smoke
+
+# From frontend directory
+cd frontend
+npm install
+npm run test:smoke:component
+
+# Watch mode (re-run on file changes)
+npm run test:smoke:component -- --watch
+
+# Verbose output
+npm run test:smoke:component -- --verbose
+```
+
+### Playwright E2E Tests
+
+#### First Time Setup
 
 ```bash
 # Install frontend dependencies
@@ -109,7 +201,7 @@ npm install
 npx playwright install chromium
 ```
 
-### Run Tests
+#### Run Tests
 
 ```bash
 # With UI (useful for debugging)
@@ -135,9 +227,52 @@ cd frontend
 npx playwright show-report
 ```
 
+## When to Use Each Test Type
+
+### Use Component Tests (Jest) When:
+
+- Working in Bolt/Stackblitz (WASM environments)
+- Need quick verification after code changes
+- Testing component rendering in isolation
+- CI/CD pipeline needs fast feedback
+- System dependencies are unavailable
+
+### Use Playwright E2E Tests When:
+
+- Working on local development machine
+- Running in CI/CD with full Node.js runtime
+- Need to test navigation and routing
+- Testing interactions between multiple pages
+- Need to verify production-like behavior
+
 ## Adding New Smoke Tests
 
+### Adding Component Tests
+
 When adding critical new pages or features:
+
+1. Open `frontend/__tests__/smoke.test.tsx`
+2. Add a new test:
+
+```typescript
+test('new feature component renders', () => {
+  render(<NewFeaturePage />);
+
+  // Check heading is present
+  expect(screen.getByRole('heading', { name: /Feature Title/i }))
+    .toBeInTheDocument();
+
+  // Check key elements exist
+  expect(screen.getByRole('button', { name: /Action/i }))
+    .toBeInTheDocument();
+});
+```
+
+3. Mock any required providers or hooks
+
+### Adding Playwright Tests
+
+When adding critical new pages:
 
 1. Open `frontend/tests/smoke.spec.ts`
 2. Add a new test:
