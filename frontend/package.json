@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --no-turbo",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "dev:test": "TURBOPACK=0 next dev -p 3000",
-    "test:smoke": "npx playwright test --config=playwright.config.ts",
-    "test:smoke:component": "jest --config=jest.config.cjs --runTestsByPath __tests__/smoke.test.tsx"
+    "test:smoke": "jest --config=jest.config.cjs --runTestsByPath __tests__/smoke.test.tsx",
+    "test:smoke:playwright": "npx playwright test --config=playwright.config.ts"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.18",

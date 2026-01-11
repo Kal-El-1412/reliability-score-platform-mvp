@@ -42,18 +42,9 @@ This occurs because:
 
 ## Quick Start
 
-### Component-Level Smoke Tests (Recommended for Bolt)
+### Default Smoke Tests (Jest Component Tests)
 
-```bash
-# From repository root
-npm run test:frontend:component-smoke
-
-# From frontend directory
-cd frontend
-npm run test:smoke:component
-```
-
-### Playwright E2E Smoke Tests (Local/CI only)
+The default smoke test uses Jest + React Testing Library and works everywhere, including WASM environments:
 
 ```bash
 # From repository root
@@ -62,6 +53,16 @@ npm run test:frontend:smoke
 # From frontend directory
 cd frontend
 npm run test:smoke
+```
+
+### Optional Playwright E2E Smoke Tests (Local/CI only)
+
+For browser-based end-to-end testing (requires native Node.js runtime):
+
+```bash
+# From frontend directory only
+cd frontend
+npm run test:smoke:playwright
 ```
 
 ### System Requirements
@@ -170,22 +171,22 @@ Location: `.github/workflows/frontend-smoke.yml`
 
 ## Running Tests Locally
 
-### Component Tests (Jest)
+### Default Smoke Tests (Jest Component Tests)
 
 ```bash
 # From repository root
-npm run test:frontend:component-smoke
+npm run test:frontend:smoke
 
 # From frontend directory
 cd frontend
 npm install
-npm run test:smoke:component
+npm run test:smoke
 
 # Watch mode (re-run on file changes)
-npm run test:smoke:component -- --watch
+npm run test:smoke -- --watch
 
 # Verbose output
-npm run test:smoke:component -- --verbose
+npm run test:smoke -- --verbose
 ```
 
 ### Playwright E2E Tests
@@ -229,30 +230,37 @@ npx playwright show-report
 
 ## When to Use Each Test Type
 
-### Use Component Tests (Jest) When:
+### Default: Jest Component Tests
 
+The default `npm run test:smoke` command uses Jest + React Testing Library.
+
+**Use this for:**
 - Working in Bolt/Stackblitz (WASM environments)
-- Need quick verification after code changes
+- Quick verification after code changes
 - Testing component rendering in isolation
-- CI/CD pipeline needs fast feedback
-- System dependencies are unavailable
+- CI/CD pipeline fast feedback
+- Any environment where system dependencies are unavailable
+- **This is the recommended default for all smoke testing**
 
-### Use Playwright E2E Tests When:
+### Optional: Playwright E2E Tests
 
-- Working on local development machine
-- Running in CI/CD with full Node.js runtime
-- Need to test navigation and routing
+Available via `npm run test:smoke:playwright` in the frontend directory.
+
+**Use this when:**
+- Working on local development machine with native Node.js
+- Running in CI/CD with full runtime capabilities
+- Need to test navigation and routing behavior
 - Testing interactions between multiple pages
-- Need to verify production-like behavior
+- Need to verify production-like browser behavior
 
 ## Adding New Smoke Tests
 
-### Adding Component Tests
+### Adding to Default Smoke Tests (Component Tests)
 
-When adding critical new pages or features:
+When adding critical new pages or features to the default smoke test suite:
 
 1. Open `frontend/__tests__/smoke.test.tsx`
-2. Add a new test:
+2. Add a new test case:
 
 ```typescript
 test('new feature component renders', () => {
@@ -268,11 +276,11 @@ test('new feature component renders', () => {
 });
 ```
 
-3. Mock any required providers or hooks
+3. Mock any required providers or hooks (AuthContext, QueryClient, etc.)
 
-### Adding Playwright Tests
+### Adding Playwright E2E Tests (Optional)
 
-When adding critical new pages:
+When adding browser-based end-to-end tests:
 
 1. Open `frontend/tests/smoke.spec.ts`
 2. Add a new test:
