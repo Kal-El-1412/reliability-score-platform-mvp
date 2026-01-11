@@ -20,6 +20,18 @@ npm run build            # Builds both frontend and backend
 
 **Note**: The frontend connects to the backend via `NEXT_PUBLIC_API_BASE_URL=http://localhost:4000/v1`
 
+## Environment Compatibility
+
+### Stackblitz Support ✅
+
+This project is configured to run in Stackblitz and other WASM-based environments:
+
+- **Turbopack disabled** via `--no-turbo` flag in `frontend/package.json`
+- Uses Webpack for broader compatibility
+- See [STACKBLITZ_COMPATIBILITY.md](./STACKBLITZ_COMPATIBILITY.md) for details
+
+**If you encounter WASM/Turbopack errors**, the project is already configured correctly - just restart the dev server.
+
 ## Documentation
 
 - **[IMPLEMENTATION_DETAILS.md](./IMPLEMENTATION_DETAILS.md)** - Comprehensive technical documentation of the Event Ledger, Feature Aggregation, and Scoring Engine V2 implementation
