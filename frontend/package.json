@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --no-turbo",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "dev:test": "TURBOPACK=0 next dev -p 3000",
     "test:smoke": "npx playwright test --config=playwright.config.ts"
   },
   "dependencies": {

@@ -18,65 +18,73 @@ Error: `turbo.createProject` is not supported by the wasm bindings.
 
 The project is now configured for Stackblitz compatibility:
 
-#### 1. Disabled Turbopack in Dev Script
+#### 1. Separate Test Script with Turbopack Disabled
 
 **File**: `/frontend/package.json`
 
 ```json
 {
   "scripts": {
-    "dev": "next dev --no-turbo"
+    "dev": "next dev",
+    "dev:test": "TURBOPACK=0 next dev -p 3000"
   }
 }
 ```
 
-The `--no-turbo` flag forces Next.js to use Webpack instead of Turbopack.
+The `dev:test` script uses `TURBOPACK=0` environment variable to completely disable Turbopack for testing environments (Playwright, CI/CD).
 
-#### 2. Configuration Note
+#### 2. Playwright Configuration
+
+**File**: `/frontend/playwright.config.ts`
+
+```typescript
+webServer: {
+  command: 'npm run dev:test',
+  url: 'http://localhost:3000',
+  reuseExistingServer: !process.env.CI,
+  timeout: 120000,
+}
+```
+
+Playwright uses the `dev:test` script to ensure Turbopack is disabled during test execution.
+
+#### 3. Configuration Note
 
 **File**: `/frontend/next.config.js`
 
-Added documentation comment explaining the Stackblitz compatibility requirement.
+Added documentation comment explaining the Stackblitz/WASM compatibility approach.
 
 ### Impact
 
-- ✅ **Stackblitz**: Works perfectly with WASM bindings
-- ✅ **Local Development**: Uses Webpack (slightly slower but more stable)
+- ✅ **Stackblitz**: Works with WASM bindings when using `TURBOPACK=0`
+- ✅ **Local Development**: Can use Turbopack (default Next.js 16+ behavior)
+- ✅ **Playwright Tests**: Runs without Turbopack via `dev:test` script
 - ✅ **Production Builds**: Unaffected (always uses optimized compiler)
-- ⚠️ **Dev Performance**: Slightly slower than Turbopack, but more compatible
 
-### Alternative: Enable Turbopack Locally
+### How It Works
 
-If you want to use Turbopack in your local environment (not Stackblitz):
+The regular `dev` script runs Next.js normally (with Turbopack enabled by default in Next.js 16+), while the `dev:test` script explicitly disables Turbopack using the `TURBOPACK=0` environment variable. This allows:
 
-```bash
-# Run locally with Turbopack
-cd frontend
-next dev
-
-# Or create a separate script
-npm run dev:turbo
-```
-
-Then add to `package.json`:
-
-```json
-{
-  "scripts": {
-    "dev": "next dev --no-turbo",
-    "dev:turbo": "next dev"
-  }
-}
-```
+- **Local development** to use Turbopack for faster builds
+- **Playwright tests** to run in a WASM-compatible environment
+- **Flexibility** across different execution contexts
 
 ### Testing the Fix
 
-After the fix, the project should:
+After the fix, Playwright tests should:
 
-1. ✅ Start successfully in Stackblitz
-2. ✅ No WASM binding errors
-3. ✅ Hot reload works correctly
-4. ✅ All routes and pages load properly
+1. ✅ Start the dev server with `TURBOPACK=0`
+2. ✅ No Turbopack WASM binding errors
+3. ✅ Run smoke tests successfully
+4. ✅ All routes load properly during tests
+
+To verify:
+
+```bash
+npm run test:frontend:smoke
+```
+
+The test should start the Next.js dev server without Turbopack errors.
 
 ### Additional Notes
 
