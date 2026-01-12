@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser({
           id: session.user.id,
           email: session.user.email || '',
-          phone: session.user.phone,
+          phone: session.user.user_metadata?.phone,
           createdAt: session.user.created_at,
         });
       }
@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser({
           id: session.user.id,
           email: session.user.email || '',
-          phone: session.user.phone,
+          phone: session.user.user_metadata?.phone,
           createdAt: session.user.created_at,
         });
       } else {
@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser({
         id: data.user.id,
         email: data.user.email || '',
-        phone: data.user.phone,
+        phone: data.user.user_metadata?.phone,
         createdAt: data.user.created_at,
       });
       router.push('/dashboard');
@@ -85,22 +85,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      phone,
+      options: {
+        data: {
+          phone: phone || null,
+        },
+      },
     });
 
     if (error) {
       throw new Error(error.message);
     }
 
-    if (data.session) {
-      setToken(data.session.access_token);
-      setUser({
-        id: data.user!.id,
-        email: data.user!.email || '',
-        phone: data.user!.phone,
-        createdAt: data.user!.created_at,
-      });
-      router.push('/dashboard');
+    if (data.user) {
+      if (data.session) {
+        setToken(data.session.access_token);
+        setUser({
+          id: data.user.id,
+          email: data.user.email || '',
+          phone: data.user.user_metadata?.phone,
+          createdAt: data.user.created_at,
+        });
+        router.push('/dashboard');
+      } else {
+        throw new Error('Registration successful! Please check your email to verify your account.');
+      }
     }
   };
 
