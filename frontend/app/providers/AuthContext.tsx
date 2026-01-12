@@ -2,8 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { authApi } from '../lib/apiClient';
-import type { User, LoginRequest, RegisterRequest } from '../lib/types';
+import { supabase } from '../lib/supabase';
+import type { User } from '../lib/types';
 
 interface AuthContextType {
   user: User | null;
@@ -24,50 +24,88 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const initAuth = async () => {
-      const storedToken = localStorage.getItem('auth_token');
-      if (storedToken) {
-        setToken(storedToken);
-        try {
-          const userData = await authApi.getMe();
-          setUser(userData);
-        } catch (error) {
-          console.error('Failed to restore session:', error);
-          localStorage.removeItem('auth_token');
-          setToken(null);
-        }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setToken(session.access_token);
+        setUser({
+          id: session.user.id,
+          email: session.user.email || '',
+          phone: session.user.phone,
+          createdAt: session.user.created_at,
+        });
       }
       setIsLoading(false);
     };
 
     initAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setToken(session.access_token);
+        setUser({
+          id: session.user.id,
+          email: session.user.email || '',
+          phone: session.user.phone,
+          createdAt: session.user.created_at,
+        });
+      } else {
+        setToken(null);
+        setUser(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
-    try {
-      const response = await authApi.login({ email, password });
-      localStorage.setItem('auth_token', response.token);
-      setToken(response.token);
-      setUser(response.user);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (data.session) {
+      setToken(data.session.access_token);
+      setUser({
+        id: data.user.id,
+        email: data.user.email || '',
+        phone: data.user.phone,
+        createdAt: data.user.created_at,
+      });
       router.push('/dashboard');
-    } catch (error) {
-      throw error;
     }
   };
 
   const register = async (email: string, password: string, phone?: string) => {
-    try {
-      const response = await authApi.register({ email, password, phone });
-      localStorage.setItem('auth_token', response.token);
-      setToken(response.token);
-      setUser(response.user);
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      phone,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (data.session) {
+      setToken(data.session.access_token);
+      setUser({
+        id: data.user!.id,
+        email: data.user!.email || '',
+        phone: data.user!.phone,
+        createdAt: data.user!.created_at,
+      });
       router.push('/dashboard');
-    } catch (error) {
-      throw error;
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('auth_token');
+  const logout = async () => {
+    await supabase.auth.signOut();
     setToken(null);
     setUser(null);
     router.push('/login');

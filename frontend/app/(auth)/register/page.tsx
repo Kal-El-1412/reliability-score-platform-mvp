@@ -5,7 +5,6 @@ import { useAuth } from '@/app/providers/AuthContext';
 import { Button } from '@/app/components/Button';
 import { Card } from '@/app/components/Card';
 import Link from 'next/link';
-import { ApiError } from '@/app/lib/apiClient';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -23,7 +22,7 @@ export default function RegisterPage() {
     try {
       await register(email, password, phone || undefined);
     } catch (err) {
-      if (err instanceof ApiError) {
+      if (err instanceof Error) {
         setError(err.message);
       } else {
         setError('An unexpected error occurred. Please try again.');
